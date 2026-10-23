@@ -136,5 +136,5 @@ WebSocket event types:
 
 ## Further Notes
 
-- Demonstration Scenario: Kent Ridge Dev Society Hack 24 planning meeting.
+- Demonstration Scenario: 29th NUS SoC Term Project Showcase (STePS) preparation meeting (https://uvents.nus.edu.sg/event/29th-steps at COM3 MPH). Agenda includes booth logistics, demo hardware verification, live Attendee bot checks, and emergency bug triage.
 - Course Presentation Plan: 1 laptop (Zoom + `kaki.host` audio and Shared Action Panel) + 2 mobile phones (`kaki.wingman` for Tech Lead and Finance Lead).
