@@ -13,6 +13,15 @@ export interface Question {
   forRole?: Role;
 }
 
+/**
+ * How the notetaker's last LLM pass went: still waiting for its first pass, ok, stale (the last
+ * pass failed, so questions and tasks may be out of date), or off (no LLM configured).
+ */
+export type NotetakerStatus = 'waiting' | 'ok' | 'stale' | 'off';
+
+/** Every notetaker status. */
+export const NOTETAKER_STATUSES: readonly NotetakerStatus[] = ['waiting', 'ok', 'stale', 'off'];
+
 /** The event types the meeting protocol knows about. */
 export type KakiEventType =
   | 'TRANSCRIPT_CHUNK'
@@ -35,6 +44,10 @@ export type KakiEvent =
         openQuestions: Question[];
         elapsedSeconds: number;
         speakerTalkSeconds: Partial<Record<Role, number>>;
+        /** Optional: whether open questions and tasks are up to date. */
+        notetakerStatus?: NotetakerStatus;
+        /** Optional: attendee roles that have barely spoken so far. */
+        quietRoles?: Role[];
       }
     >
   | KakiEventOf<'HOST_SPEECH_TRIGGERED', { kind: 'OPENING' | 'TIMEOUT' | 'CLOSING'; text: string }>
@@ -74,6 +87,10 @@ function isSpeakerTalkSeconds(value: unknown, scenario: Scenario): value is Part
   );
 }
 
+function isNotetakerStatus(value: unknown): value is NotetakerStatus {
+  return typeof value === 'string' && (NOTETAKER_STATUSES as readonly string[]).includes(value);
+}
+
 function isFact(value: unknown): value is Fact {
   return isObject(value) && isString(value.text) && isString(value.source) && isString(value.date);
 }
@@ -107,7 +124,10 @@ const PAYLOAD_CHECKS: Record<KakiEventType, PayloadCheck> = {
     Array.isArray(payload.openQuestions) &&
     payload.openQuestions.every((question) => isQuestion(question, scenario)) &&
     isNonNegativeFinite(payload.elapsedSeconds) &&
-    isSpeakerTalkSeconds(payload.speakerTalkSeconds, scenario),
+    isSpeakerTalkSeconds(payload.speakerTalkSeconds, scenario) &&
+    (payload.notetakerStatus === undefined || isNotetakerStatus(payload.notetakerStatus)) &&
+    (payload.quietRoles === undefined ||
+      (Array.isArray(payload.quietRoles) && payload.quietRoles.every((role) => isRoleIn(scenario, role)))),
   HOST_SPEECH_TRIGGERED: (payload) =>
     (payload.kind === 'OPENING' || payload.kind === 'TIMEOUT' || payload.kind === 'CLOSING') &&
     isString(payload.text),

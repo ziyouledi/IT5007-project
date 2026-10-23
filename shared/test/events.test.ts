@@ -125,6 +125,19 @@ describe('isKakiEvent', () => {
     ).toBe(false);
   });
 
+  it('accepts the optional notetaker status and quiet roles on a record update, and checks them', () => {
+    const withExtras = (extras: Record<string, unknown>) => ({
+      ...recordUpdate,
+      payload: { ...recordUpdate.payload, ...extras },
+    });
+
+    expect(isKakiEvent(withExtras({ notetakerStatus: 'stale', quietRoles: ['cashier'] }), testScenario)).toBe(true);
+    expect(isKakiEvent(withExtras({ notetakerStatus: 'off', quietRoles: [] }), testScenario)).toBe(true);
+    expect(isKakiEvent(withExtras({ notetakerStatus: 'asleep' }), testScenario)).toBe(false);
+    expect(isKakiEvent(withExtras({ quietRoles: ['waiter'] }), testScenario)).toBe(false);
+    expect(isKakiEvent(withExtras({ quietRoles: 'cashier' }), testScenario)).toBe(false);
+  });
+
   it('rejects malformed tasks', () => {
     const taskEvent = { type: 'TASK_UPDATED', audience: { kind: 'screen' }, payload: { task } };
     expect(isKakiEvent({ ...taskEvent, payload: { task: { ...task, status: 'LOST' } } }, testScenario)).toBe(false);
