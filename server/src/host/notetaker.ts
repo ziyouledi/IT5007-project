@@ -5,6 +5,7 @@ import {
   isSuggestInput,
   roleForZoomName,
   roleLabel,
+  type NotetakerStatus,
   type Question,
   type Role,
   type Scenario,
@@ -27,9 +28,6 @@ interface TranscriptLine {
   role?: Role;
   text: string;
 }
-
-/** How the notetaker's last LLM pass went. */
-export type NotetakerStatus = 'waiting' | 'ok' | 'stale' | 'off';
 
 /** The notetaker's part of the Meeting Record. */
 export interface NotetakerState {

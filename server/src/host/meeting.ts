@@ -7,6 +7,10 @@ import { loadReplay, startReplay, type ReplayLine } from './replay';
 
 const TICK_MS = 1_000;
 const DEFAULT_NOTETAKER_INTERVAL_MS = 7_000;
+/** Republish an unchanged record after this much meeting time so clients can resync their clocks. */
+const HEARTBEAT_MEETING_SECONDS = 30;
+/** Talk time is compared at this granularity, so every transcript line does not cause a publish. */
+const TALK_STEP_SECONDS = 10;
 
 /** How the meeting module runs; `hostModules` builds this from the environment. */
 export interface MeetingModuleOptions {
@@ -44,13 +48,30 @@ export function createMeetingModule({
       });
       if (llm === undefined) console.warn('kaki host: no LLM configured; the notetaker only tracks talk time');
 
+      let lastSignature: string | undefined;
+      let lastPublishedAt = 0;
+
+      // Clients keep every record they receive, so publish only when something people see has
+      // changed, plus a heartbeat; between records, clients count elapsedSeconds up themselves.
       function publishRecord(): void {
         const now = clock.snapshot();
         if (!now.started) return;
-        const { openQuestions, talkSecondsFor } = notetaker.state();
-        const speakerTalkSeconds = Object.fromEntries(
-          Object.entries(talkSecondsFor(now.agendaIndex)).map(([role, seconds]) => [role, Math.round(seconds ?? 0)]),
-        );
+        const { openQuestions, talkSecondsFor, status, quietRoles } = notetaker.state();
+        const talk = talkSecondsFor(now.agendaIndex);
+        const signature = JSON.stringify([
+          now.agendaIndex,
+          now.overrun,
+          openQuestions,
+          status,
+          quietRoles,
+          Object.entries(talk).map(([role, seconds]) => [role, Math.floor((seconds ?? 0) / TALK_STEP_SECONDS)]),
+        ]);
+        if (signature === lastSignature && now.meetingElapsedSeconds - lastPublishedAt < HEARTBEAT_MEETING_SECONDS) {
+          return;
+        }
+        lastSignature = signature;
+        lastPublishedAt = now.meetingElapsedSeconds;
+
         const event: KakiEvent = {
           type: 'MEETING_RECORD_UPDATED',
           audience: { kind: 'all' },
@@ -59,7 +80,11 @@ export function createMeetingModule({
             agendaIndex: now.agendaIndex,
             openQuestions,
             elapsedSeconds: Math.floor(now.itemElapsedSeconds),
-            speakerTalkSeconds,
+            speakerTalkSeconds: Object.fromEntries(
+              Object.entries(talk).map(([role, seconds]) => [role, Math.round(seconds ?? 0)]),
+            ),
+            notetakerStatus: status,
+            quietRoles,
           },
         };
         hub.publish(event, { retainKey: 'record' });

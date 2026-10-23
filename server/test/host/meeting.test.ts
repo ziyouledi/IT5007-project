@@ -3,7 +3,7 @@ import type { KakiEvent } from '@kaki/shared';
 import type { KakiApp } from '../../src/app';
 import { createMeetingModule } from '../../src/host/meeting';
 import { createFakeLlm } from '../../src/llm';
-import { connectClient, createTestApp, portOf, settle, waitForEvent, type TestClient } from '../helpers';
+import { connectClient, createTestApp, portOf, settle, waitFor, waitForEvent, type TestClient } from '../helpers';
 
 const reply = (body: Record<string, unknown>) =>
   JSON.stringify({ newQuestions: [], answeredQuestionIds: [], newTasks: [], ...body });
@@ -97,5 +97,49 @@ describe('host meeting module', () => {
     });
     const record = await waitForEvent(screen, isRecord, 'first record', 2_000);
     expect(record).toMatchObject({ payload: { agendaIndex: 0, openQuestions: [] } });
+  });
+
+  it('says when the notes are stale and who has been quiet', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const llm = createFakeLlm(() => {
+      throw new Error('gateway unreachable');
+    });
+    app = await createTestApp({ modules: [createMeetingModule({ llm, notetakerIntervalMs: 50 })] });
+    const screen = await connect('screen');
+
+    // Ada talks for over a minute; Bao says nothing.
+    const longTalk = Array.from({ length: 160 }, () => 'word').join(' ');
+    app.hub.publish({
+      type: 'TRANSCRIPT_CHUNK',
+      audience: { kind: 'screen' },
+      payload: { speaker: 'Ada (Chef)', text: longTalk, timestamp: new Date().toISOString() },
+    });
+
+    const record = await waitForEvent(
+      screen,
+      (event) => isRecord(event) && event.payload.notetakerStatus === 'stale',
+      'stale record',
+      3_000,
+    );
+    expect(record).toMatchObject({ payload: { quietRoles: ['cashier'], speakerTalkSeconds: { chef: 64 } } });
+  });
+
+  it('holds back unchanged records but sends a heartbeat', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // At 20x, the 30 s heartbeat comes every 1.5 real seconds.
+    app = await createTestApp({ modules: [createMeetingModule({ speed: 20 })] });
+    const screen = await connect('screen');
+    app.hub.publish({
+      type: 'TRANSCRIPT_CHUNK',
+      audience: { kind: 'screen' },
+      payload: { speaker: 'Ada (Chef)', text: 'Let us begin.', timestamp: new Date().toISOString() },
+    });
+
+    const first = await waitForEvent(screen, isRecord, 'first record', 2_000);
+    expect(first).toMatchObject({ payload: { notetakerStatus: 'off', quietRoles: [] } });
+    await settle(500);
+    expect(screen.messages.filter(isRecord)).toHaveLength(1);
+
+    await waitFor(() => (screen.messages.filter(isRecord).length === 2 ? true : undefined), 'heartbeat', 3_000);
   });
 });
