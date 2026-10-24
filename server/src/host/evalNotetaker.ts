@@ -7,7 +7,7 @@
 import '../env';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { KakiEvent, Role } from '@kaki/shared';
+import type { KakiEvent, Role, Task } from '@kaki/shared';
 import type { Hub } from '../hub';
 import { llmFromEnv } from '../llm';
 import { loadScenario, scenarioDir, scenarioFolder } from '../loadScenario';
@@ -15,9 +15,17 @@ import { createTaskStore } from '../tasks';
 import { createNotetaker } from './notetaker';
 import { loadReplay } from './replay';
 
+interface ExpectedTask {
+  name: string;
+  assignee: Role;
+  keywords: string[];
+}
+
 interface Expected {
-  tasks: Array<{ name: string; assignee: Role; keywords: string[] }>;
-  maxTasks: number;
+  /** Tasks the notetaker must find, once each. */
+  tasks: ExpectedTask[];
+  /** Real follow-ups it may also find; anything outside both lists fails the run. */
+  acceptedTasks?: ExpectedTask[];
   questions: Array<{ name: string; keywords: string[] }>;
   quietRoles: Role[];
 }
@@ -78,15 +86,23 @@ console.log(`Open questions (${state.openQuestions.length}):`);
 for (const question of state.openQuestions) console.log(`  - ${question.text} → ${question.forRole ?? '?'}`);
 console.log(`Quiet roles: ${state.quietRoles.join(', ') || '(none)'}\n`);
 
+const matchesTask = (task: Task, want: ExpectedTask) =>
+  task.suggestedAssignee === want.assignee && mentionsAll(`${task.title} ${task.context}`, want.keywords);
+
 const failures: string[] = [];
 for (const want of expected.tasks) {
-  const matches = found.filter(
-    (task) => task.suggestedAssignee === want.assignee && mentionsAll(`${task.title} ${task.context}`, want.keywords),
-  );
+  const matches = found.filter((task) => matchesTask(task, want));
   if (matches.length === 0) failures.push(`missing task: ${want.name}`);
   if (matches.length > 1) failures.push(`duplicate task: ${want.name} (${matches.length}×)`);
 }
-if (found.length > expected.maxTasks) failures.push(`too many tasks: ${found.length} > ${expected.maxTasks}`);
+for (const want of expected.acceptedTasks ?? []) {
+  const matches = found.filter((task) => matchesTask(task, want));
+  if (matches.length > 1) failures.push(`duplicate task: ${want.name} (${matches.length}×)`);
+}
+const known = [...expected.tasks, ...(expected.acceptedTasks ?? [])];
+for (const task of found) {
+  if (!known.some((want) => matchesTask(task, want))) failures.push(`unexpected task: ${task.title}`);
+}
 for (const want of expected.questions) {
   if (!state.openQuestions.some((question) => mentionsAll(question.text, want.keywords))) {
     failures.push(`missing question: ${want.name}`);

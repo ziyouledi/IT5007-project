@@ -4,7 +4,10 @@
     { "name": "launch-date post", "assignee": "producer", "keywords": ["launch", "date"] },
     { "name": "streamer email", "assignee": "marketing_lead", "keywords": ["streamer"] }
   ],
-  "maxTasks": 4,
+  "acceptedTasks": [
+    { "name": "milestone report", "assignee": "producer", "keywords": ["milestone"] },
+    { "name": "store page text", "assignee": "producer", "keywords": ["store page"] }
+  ],
   "questions": [
     { "name": "where players quit", "keywords": ["level 5"] },
     { "name": "final-build date", "keywords": ["final build"] }
