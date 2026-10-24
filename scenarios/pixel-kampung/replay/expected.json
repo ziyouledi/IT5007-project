@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    { "name": "crash bug", "assignee": "lead_programmer", "keywords": ["crash"] },
+    { "name": "launch-date post", "assignee": "producer", "keywords": ["launch", "date"] },
+    { "name": "streamer email", "assignee": "marketing_lead", "keywords": ["streamer"] }
+  ],
+  "maxTasks": 4,
+  "questions": [
+    { "name": "where players quit", "keywords": ["level 5"] },
+    { "name": "final-build date", "keywords": ["final build"] }
+  ],
+  "quietRoles": ["marketing_lead"]
+}

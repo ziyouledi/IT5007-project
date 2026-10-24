@@ -50,6 +50,27 @@ describe('OpenAI-compatible LLM client', () => {
     );
   });
 
+  it('drops response_format, once and for good, when the model refuses it', async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    const llm = createOpenAiLlm({
+      baseUrl: 'https://gateway.example',
+      apiKey: 'k',
+      model: 'm',
+      fetchImpl: async (_url, init) => {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        bodies.push(body);
+        if ('response_format' in body) {
+          return new Response('{"error":"response_format is not supported by this model"}', { status: 400 });
+        }
+        return new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] }));
+      },
+    });
+
+    expect(await llm.complete([], { json: true })).toBe('{}');
+    expect(await llm.complete([], { json: true })).toBe('{}');
+    expect(bodies.map((body) => 'response_format' in body)).toEqual([true, false, false]);
+  });
+
   it('is configured from the environment only when every setting is present', () => {
     expect(llmFromEnv({})).toBeUndefined();
     expect(llmFromEnv({ KAKI_LLM_BASE_URL: 'https://x', KAKI_LLM_API_KEY: 'k' })).toBeUndefined();

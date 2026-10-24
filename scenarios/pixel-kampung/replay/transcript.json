@@ -16,7 +16,7 @@
     { "at": 430, "speaker": "Arjun", "text": "Yes, take them from release candidate two, the old UI is gone." },
     { "at": 520, "speaker": "Wei Ling", "text": "Great, that's build and bugs. Let's move on to level 5 difficulty and the playtest feedback. Mei, over to you." },
 
-    { "at": 545, "speaker": "Mei", "text": "So, the playtest. Fourteen of the twenty playtesters quit on level 5. That's the big drop-off, everything before it is fine." },
+    { "at": 545, "agendaIndex": 1, "speaker": "Mei", "text": "So, the playtest. Fourteen of the twenty playtesters quit on level 5. That's the big drop-off, everything before it is fine." },
     { "at": 580, "speaker": "Mei", "text": "Level 5 is where the second stall opens and you have to cook and serve at the same time. People said it felt unfair, not hard." },
     { "at": 620, "speaker": "Arjun", "text": "Is it the timer? We cut the customer patience timer in that level by thirty percent." },
     { "at": 660, "speaker": "Mei", "text": "Maybe. I want to try putting the patience back and adding a tutorial pop-up for the second stall." },
@@ -32,7 +32,7 @@
     { "at": 1150, "speaker": "Mei", "text": "One more thing on level 5, the stall upgrade prices. Players said they never had enough coins by then." },
     { "at": 1200, "speaker": "Wei Ling", "text": "Let's take the coin balance offline, we're over time on this one. Moving on to the publisher milestone." },
 
-    { "at": 1240, "speaker": "Wei Ling", "text": "Starfruit wants a milestone report and the final build. The report is mostly done, I'll send it to them this week." },
+    { "at": 1240, "agendaIndex": 2, "speaker": "Wei Ling", "text": "Starfruit wants a milestone report and the final build. The report is mostly done, I'll send it to them this week." },
     { "at": 1280, "speaker": "Arjun", "text": "When does Starfruit need the final build? That decides whether the crash fix makes it." },
     { "at": 1300, "speaker": "Wei Ling", "text": "The wiki says the twenty-fifth of November, but I remember an email from them saying earlier. I don't want to guess." },
     { "at": 1330, "speaker": "Arjun", "text": "If it's earlier than the twentieth, we're tight." },
@@ -43,7 +43,7 @@
     { "at": 1560, "speaker": "Arjun", "text": "Please do, half the team still thinks it's December." },
     { "at": 1650, "speaker": "Wei Ling", "text": "Okay, last item: launch marketing and the booth budget." },
 
-    { "at": 1675, "speaker": "Wei Ling", "text": "Indie Arcade SG confirmed our booth. The budget we agreed was two thousand dollars, and we've already spent most of it on the banner and the stand." },
+    { "at": 1675, "agendaIndex": 3, "speaker": "Wei Ling", "text": "Indie Arcade SG confirmed our booth. The budget we agreed was two thousand dollars, and we've already spent most of it on the banner and the stand." },
     { "at": 1720, "speaker": "Mei", "text": "Can we still get the two demo tablets? Visitors should play the satay level, not watch a trailer." },
     { "at": 1760, "speaker": "Wei Ling", "text": "If we borrow tablets from the office we save about four hundred." },
     { "at": 1800, "speaker": "Daniel", "text": "Yeah." },

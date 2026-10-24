@@ -3,6 +3,8 @@ import type { AgendaItem } from '@kaki/shared';
 /** Where the meeting is on its agenda right now. */
 export interface ClockSnapshot {
   started: boolean;
+  /** True once the meeting is over; time stands still from then on. */
+  ended: boolean;
   agendaIndex: number;
   /** Seconds spent on the current agenda item. */
   itemElapsedSeconds: number;
@@ -15,6 +17,8 @@ export interface ClockSnapshot {
 /** The agenda clock: knows the current item and its elapsed time, and signals overrun once per item. */
 export interface AgendaClock {
   start(): void;
+  /** Stop the meeting: time freezes and no more overruns fire. */
+  end(): void;
   snapshot(): ClockSnapshot;
   /** Move forward to a later agenda item; earlier or out-of-range indexes are ignored. */
   advanceTo(index: number): void;
@@ -35,12 +39,14 @@ export function createAgendaClock({ agenda, speed = 1, now = Date.now }: AgendaC
   if (!(speed > 0)) throw new Error(`Clock speed must be positive, got ${speed}`);
 
   let startedAt: number | undefined;
+  let endedAtSeconds: number | undefined;
   let agendaIndex = 0;
   let itemStartSeconds = 0;
   const overrunFired = new Set<number>();
   const overrunHandlers = new Set<(agendaIndex: number, item: AgendaItem) => void>();
 
   function meetingSeconds(): number {
+    if (endedAtSeconds !== undefined) return endedAtSeconds;
     return startedAt === undefined ? 0 : ((now() - startedAt) / 1000) * speed;
   }
 
@@ -50,6 +56,7 @@ export function createAgendaClock({ agenda, speed = 1, now = Date.now }: AgendaC
     const item = agenda[agendaIndex];
     return {
       started: startedAt !== undefined,
+      ended: endedAtSeconds !== undefined,
       agendaIndex,
       itemElapsedSeconds,
       meetingElapsedSeconds,
@@ -61,16 +68,21 @@ export function createAgendaClock({ agenda, speed = 1, now = Date.now }: AgendaC
     start() {
       startedAt ??= now();
     },
+    end() {
+      if (startedAt !== undefined) endedAtSeconds ??= meetingSeconds();
+    },
     snapshot,
     advanceTo(index) {
-      if (!Number.isInteger(index) || index <= agendaIndex || index >= agenda.length) return;
+      if (endedAtSeconds !== undefined || !Number.isInteger(index) || index <= agendaIndex || index >= agenda.length) {
+        return;
+      }
       agendaIndex = index;
       itemStartSeconds = meetingSeconds();
     },
     tick() {
       const current = snapshot();
       const item = agenda[current.agendaIndex];
-      if (!current.overrun || item === undefined || overrunFired.has(current.agendaIndex)) return;
+      if (current.ended || !current.overrun || item === undefined || overrunFired.has(current.agendaIndex)) return;
       overrunFired.add(current.agendaIndex);
       for (const handler of overrunHandlers) {
         try {

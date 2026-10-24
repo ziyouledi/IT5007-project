@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { roleLabel, type KakiCommand, type KakiEvent, type Scenario, type Task } from '@kaki/shared';
 import { useKaki, useScenario } from '../kaki';
 import {
@@ -58,6 +59,23 @@ function isRecord(event: KakiEvent): event is RecordEvent {
   return event.type === 'MEETING_RECORD_UPDATED';
 }
 
+/**
+ * The server sends a record only when something changes, plus a heartbeat every 30 s of meeting
+ * time, so count up locally in between. Stop a little after a missed heartbeat: the meeting may be over.
+ */
+const MAX_COUNT_UP_SECONDS = 35;
+
+function useCountUp(elapsedSeconds: number, record: RecordEvent): number {
+  // Each record is a new object, so this restarts the count whenever one arrives.
+  const receivedAt = useMemo(() => Date.now(), [record]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return elapsedSeconds + Math.min(MAX_COUNT_UP_SECONDS, Math.max(0, (now - receivedAt) / 1000));
+}
+
 function formatMinutes(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   return `${minutes}:${String(Math.floor(totalSeconds % 60)).padStart(2, '0')}`;
@@ -65,7 +83,8 @@ function formatMinutes(totalSeconds: number): string {
 
 /** The current agenda item, its time, and who has barely spoken. */
 function MeetingRecordCard({ record, scenario }: { record: RecordEvent; scenario: Scenario }) {
-  const { agendaIndex, elapsedSeconds, openQuestions, quietRoles = [] } = record.payload;
+  const { agendaIndex, openQuestions, quietRoles = [] } = record.payload;
+  const elapsedSeconds = useCountUp(record.payload.elapsedSeconds, record);
   const item = scenario.agenda[agendaIndex];
   const limitSeconds = (item?.minutes ?? 0) * 60;
 

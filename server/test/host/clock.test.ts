@@ -75,6 +75,25 @@ describe('agenda clock', () => {
     expect(overruns).toEqual([0, 1]);
   });
 
+  it('freezes time and stops signalling once the meeting ends', () => {
+    const time = fakeTime();
+    const clock = createAgendaClock({ agenda, now: time.now });
+    const overruns: number[] = [];
+    clock.onOverrun((index) => overruns.push(index));
+    clock.end();
+    expect(clock.snapshot().ended).toBe(false);
+
+    clock.start();
+    time.advance(100);
+    clock.end();
+    time.advance(1_000);
+    clock.tick();
+    clock.advanceTo(1);
+
+    expect(clock.snapshot()).toMatchObject({ ended: true, agendaIndex: 0, meetingElapsedSeconds: 100 });
+    expect(overruns).toEqual([]);
+  });
+
   it('runs meeting time faster for a sped-up replay', () => {
     const time = fakeTime();
     const clock = createAgendaClock({ agenda, now: time.now, speed: 10 });

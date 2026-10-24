@@ -6,13 +6,22 @@ import { parseScenario, type Scenario } from '@kaki/shared';
 const SCENARIOS_DIR = fileURLToPath(new URL('../../scenarios/', import.meta.url));
 const FOLDER_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
-/** Load and validate scenarios/<name>/scenario.json, failing loudly with the file path. */
-export async function loadScenario(name = process.env.SCENARIO ?? 'pixel-kampung'): Promise<Scenario> {
+/** The scenario folder selected with SCENARIO (default: pixel-kampung). */
+export function scenarioFolder(): string {
+  return process.env.SCENARIO ?? 'pixel-kampung';
+}
+
+/** The absolute path of scenarios/<name>/, rejecting anything that is not a plain folder name. */
+export function scenarioDir(name: string): string {
   if (!FOLDER_PATTERN.test(name)) {
     throw new Error(`Invalid SCENARIO "${name}": expected a folder name such as "pixel-kampung"`);
   }
+  return path.join(SCENARIOS_DIR, name);
+}
 
-  const file = path.join(SCENARIOS_DIR, name, 'scenario.json');
+/** Load and validate scenarios/<name>/scenario.json, failing loudly with the file path. */
+export async function loadScenario(name = scenarioFolder()): Promise<Scenario> {
+  const file = path.join(scenarioDir(name), 'scenario.json');
   let text: string;
   try {
     text = await readFile(file, 'utf8');

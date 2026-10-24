@@ -51,32 +51,43 @@ export function createOpenAiLlm({
   fetchImpl = fetch,
 }: OpenAiLlmOptions): LlmClient {
   const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  // Not every OpenAI-compatible model accepts response_format; stop sending it once one refuses.
+  let jsonModeSupported = true;
+
+  async function post(body: Record<string, unknown>, signal: AbortSignal, timeout: AbortSignal): Promise<Response> {
+    try {
+      return await fetchImpl(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (error) {
+      const reason = timeout.aborted ? `timed out after ${timeoutMs} ms` : String(error);
+      throw new LlmError(`LLM request failed: ${reason}`, { cause: error });
+    }
+  }
 
   return {
     async complete(messages, options = {}) {
       const timeout = AbortSignal.timeout(timeoutMs);
       const signal = options.signal === undefined ? timeout : AbortSignal.any([timeout, options.signal]);
+      const request = { model, messages, temperature: 0 };
+      const askForJson = options.json === true && jsonModeSupported;
 
-      let response: Response;
-      try {
-        response = await fetchImpl(url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature: 0,
-            ...(options.json === true ? { response_format: { type: 'json_object' } } : {}),
-          }),
-          signal,
-        });
-      } catch (error) {
-        const reason = timeout.aborted ? `timed out after ${timeoutMs} ms` : String(error);
-        throw new LlmError(`LLM request failed: ${reason}`, { cause: error });
+      let response = await post(
+        askForJson ? { ...request, response_format: { type: 'json_object' } } : request,
+        signal,
+        timeout,
+      );
+      let detail = response.ok ? '' : (await response.text().catch(() => '')).slice(0, 200);
+      if (askForJson && response.status === 400 && detail.includes('response_format')) {
+        jsonModeSupported = false;
+        response = await post(request, signal, timeout);
+        detail = response.ok ? '' : (await response.text().catch(() => '')).slice(0, 200);
       }
 
       if (!response.ok) {
-        const detail = (await response.text().catch(() => '')).slice(0, 200);
         throw new LlmError(`LLM request failed with HTTP ${response.status}: ${detail}`);
       }
 

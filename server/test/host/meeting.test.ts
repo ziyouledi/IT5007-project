@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { KakiEvent } from '@kaki/shared';
-import type { KakiApp } from '../../src/app';
+import { createApp, type KakiApp } from '../../src/app';
 import { createMeetingModule } from '../../src/host/meeting';
 import { createFakeLlm } from '../../src/llm';
+import { testScenario } from '../fixtures/scenario';
 import { connectClient, createTestApp, portOf, settle, waitFor, waitForEvent, type TestClient } from '../helpers';
 
 const reply = (body: Record<string, unknown>) =>
@@ -28,6 +29,14 @@ async function connect(role: string): Promise<TestClient> {
   return client;
 }
 
+function say(text: string): void {
+  app!.hub.publish({
+    type: 'TRANSCRIPT_CHUNK',
+    audience: { kind: 'screen' },
+    payload: { speaker: 'Ada (Chef)', text, timestamp: new Date().toISOString() },
+  });
+}
+
 describe('host meeting module', () => {
   it('turns a replayed transcript into a meeting record and suggested tasks', async () => {
     const llm = createFakeLlm((messages) =>
@@ -36,7 +45,12 @@ describe('host meeting module', () => {
             agendaIndex: 0,
             newQuestions: [{ text: 'Who services the oven?', forRole: 'chef' }],
             newTasks: [
-              { title: 'Call the oven repair man', context: 'The oven trips the fuse.', suggestedAssignee: 'chef' },
+              {
+                title: 'Call the oven repair man',
+                context: 'The oven trips the fuse.',
+                suggestedAssignee: 'chef',
+                evidence: 'The oven trips the fuse again.',
+              },
             ],
           })
         : reply({}),
@@ -64,21 +78,23 @@ describe('host meeting module', () => {
     expect(suggested).toMatchObject({ payload: { task: { title: 'Call the oven repair man', suggestedAssignee: 'chef' } } });
 
     const record = await waitForEvent(
-      chef,
+      screen,
       (event) => isRecord(event) && event.payload.openQuestions.length > 0,
       'record with a question',
     );
     expect(record).toMatchObject({
-      audience: { kind: 'all' },
+      audience: { kind: 'screen' },
       payload: {
         agendaIndex: 0,
         openQuestions: [{ id: 'q-1', text: 'Who services the oven?', forRole: 'chef' }],
         speakerTalkSeconds: { chef: 2, cashier: 2 },
       },
     });
+    // Phones never get the record, so it cannot pile up there.
+    expect(chef.messages.filter(isRecord)).toEqual([]);
 
     // A late joiner gets the latest record straight away.
-    const late = await connect('cashier');
+    const late = await connect('screen');
     await waitForEvent(late, isRecord, 'retained record');
   });
 
@@ -90,11 +106,7 @@ describe('host meeting module', () => {
     await settle(1_200);
     expect(screen.messages.filter(isRecord)).toEqual([]);
 
-    app.hub.publish({
-      type: 'TRANSCRIPT_CHUNK',
-      audience: { kind: 'screen' },
-      payload: { speaker: 'Ada (Chef)', text: 'Let us begin.', timestamp: new Date().toISOString() },
-    });
+    say('Let us begin.');
     const record = await waitForEvent(screen, isRecord, 'first record', 2_000);
     expect(record).toMatchObject({ payload: { agendaIndex: 0, openQuestions: [] } });
   });
@@ -108,12 +120,7 @@ describe('host meeting module', () => {
     const screen = await connect('screen');
 
     // Ada talks for over a minute; Bao says nothing.
-    const longTalk = Array.from({ length: 160 }, () => 'word').join(' ');
-    app.hub.publish({
-      type: 'TRANSCRIPT_CHUNK',
-      audience: { kind: 'screen' },
-      payload: { speaker: 'Ada (Chef)', text: longTalk, timestamp: new Date().toISOString() },
-    });
+    say(Array.from({ length: 160 }, () => 'word').join(' '));
 
     const record = await waitForEvent(
       screen,
@@ -129,11 +136,7 @@ describe('host meeting module', () => {
     // At 20x, the 30 s heartbeat comes every 1.5 real seconds.
     app = await createTestApp({ modules: [createMeetingModule({ speed: 20 })] });
     const screen = await connect('screen');
-    app.hub.publish({
-      type: 'TRANSCRIPT_CHUNK',
-      audience: { kind: 'screen' },
-      payload: { speaker: 'Ada (Chef)', text: 'Let us begin.', timestamp: new Date().toISOString() },
-    });
+    say('Let us begin.');
 
     const first = await waitForEvent(screen, isRecord, 'first record', 2_000);
     expect(first).toMatchObject({ payload: { notetakerStatus: 'off', quietRoles: [] } });
@@ -141,5 +144,57 @@ describe('host meeting module', () => {
     expect(screen.messages.filter(isRecord)).toHaveLength(1);
 
     await waitFor(() => (screen.messages.filter(isRecord).length === 2 ? true : undefined), 'heartbeat', 3_000);
+  });
+
+  it('follows the replay agenda markers and ends the meeting after the last line', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    // The LLM keeps saying item 0; a replay goes by its own markers instead.
+    const llm = createFakeLlm(() => reply({ agendaIndex: 0 }));
+    app = await createApp({
+      scenario: { ...testScenario, agenda: [...testScenario.agenda, { title: 'Till', minutes: 2, ownerRole: 'cashier' }] },
+      modules: [
+        createMeetingModule({
+          llm,
+          speed: 20,
+          notetakerIntervalMs: 50,
+          replay: [
+            { at: 0, speaker: 'Ada (Chef)', text: 'Prep is done, I think.' },
+            { at: 2, speaker: 'Bao (Cashier)', text: 'On to the till then.', agendaIndex: 1 },
+          ],
+        }),
+      ],
+    });
+    const screen = await connect('screen');
+
+    const record = await waitForEvent(
+      screen,
+      (event) => isRecord(event) && event.payload.agendaIndex === 1,
+      'record on the second item',
+    );
+    // Bao's line counts towards the item it opened.
+    expect(record).toMatchObject({ payload: { speakerTalkSeconds: { cashier: 2 } } });
+
+    const count = screen.messages.filter(isRecord).length;
+    await settle(2_000);
+    expect(screen.messages.filter(isRecord)).toHaveLength(count);
+  });
+
+  it('logs a failing record publish instead of crashing the server', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    app = await createTestApp({ modules: [createMeetingModule({ notetakerIntervalMs: 50 })] });
+    const publish = app.hub.publish.bind(app.hub);
+    app.hub.publish = (event, options) => {
+      if (isRecord(event)) throw new Error('refused');
+      publish(event, options);
+    };
+
+    say('Let us begin.');
+    await waitFor(
+      () => (error.mock.calls.some(([message]) => String(message).includes('kaki host:')) ? true : undefined),
+      'logged failure',
+      2_500,
+    );
   });
 });

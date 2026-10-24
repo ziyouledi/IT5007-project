@@ -15,8 +15,8 @@ const TALK_STEP_SECONDS = 10;
 /** How the meeting module runs; `hostModules` builds this from the environment. */
 export interface MeetingModuleOptions {
   llm?: LlmClient;
-  /** Play the scenario's scripted transcript; pass lines directly in tests. */
-  replay?: boolean | ReplayLine[];
+  /** Replay a scripted transcript: a scenario folder to load it from, or the lines themselves. */
+  replay?: string | ReplayLine[];
   /** Meeting time per real second while replaying (2 = twice as fast). */
   speed?: number;
   notetakerIntervalMs?: number;
@@ -24,11 +24,12 @@ export interface MeetingModuleOptions {
 
 /**
  * The meeting record: agenda clock, notetaker and (optionally) the replay feed.
- * The clock starts on the first transcript line, live or replayed.
+ * The clock starts on the first transcript line, live or replayed. A replay moves the agenda on
+ * its own markers and ends the meeting after its last line; live, the notetaker moves the agenda.
  */
 export function createMeetingModule({
   llm,
-  replay = false,
+  replay,
   speed = 1,
   notetakerIntervalMs = DEFAULT_NOTETAKER_INTERVAL_MS,
 }: MeetingModuleOptions = {}): KakiModule {
@@ -41,10 +42,13 @@ export function createMeetingModule({
         tasks,
         llm,
         agendaIndex: () => clock.snapshot().agendaIndex,
-        onAgendaIndex: (index) => {
-          clock.advanceTo(index);
-          publishRecord();
-        },
+        onAgendaIndex:
+          replay === undefined
+            ? (index) => {
+                clock.advanceTo(index);
+                publishRecord();
+              }
+            : undefined,
       });
       if (llm === undefined) console.warn('kaki host: no LLM configured; the notetaker only tracks talk time');
 
@@ -74,7 +78,8 @@ export function createMeetingModule({
 
         const event: KakiEvent = {
           type: 'MEETING_RECORD_UPDATED',
-          audience: { kind: 'all' },
+          // Phones don't show the record, and Wingman reads it in-process via hub.subscribe.
+          audience: { kind: 'screen' },
           // elapsedSeconds and speakerTalkSeconds are for the current agenda item.
           payload: {
             agendaIndex: now.agendaIndex,
@@ -90,6 +95,22 @@ export function createMeetingModule({
         hub.publish(event, { retainKey: 'record' });
       }
 
+      // A failure here must not take the meeting server down with it.
+      function guarded(label: string, run: () => void): void {
+        try {
+          run();
+        } catch (error) {
+          console.error(`kaki host: ${label} failed`, error);
+        }
+      }
+
+      function runNotetaker(): Promise<void> {
+        return notetaker
+          .run()
+          .then(() => guarded('publishing the record', publishRecord))
+          .catch((error: unknown) => console.error('kaki host: the notetaker pass failed', error));
+      }
+
       clock.onOverrun((index, item) => {
         console.log(`kaki host: agenda item ${index} "${item.title}" is over its ${item.minutes} minutes`);
       });
@@ -101,22 +122,36 @@ export function createMeetingModule({
       });
 
       const ticker = setInterval(() => {
-        clock.tick();
-        publishRecord();
+        guarded('the agenda tick', () => {
+          clock.tick();
+          publishRecord();
+        });
       }, TICK_MS);
-      const notetakerTimer = setInterval(() => {
-        void notetaker.run().then(publishRecord);
-      }, notetakerIntervalMs);
+      const notetakerTimer = setInterval(() => void runNotetaker(), notetakerIntervalMs);
+
+      function endMeeting(): void {
+        clock.end();
+        clearInterval(ticker);
+        console.log('kaki host: the replay has finished; the meeting is over');
+        // One last pass so the final lines still reach the record.
+        void runNotetaker();
+      }
 
       let stopReplay: (() => void) | undefined;
       let stopped = false;
-      if (replay !== false) {
-        const lines = replay === true ? loadReplay(scenario) : Promise.resolve(replay);
+      if (replay !== undefined) {
+        const lines = typeof replay === 'string' ? loadReplay(scenario, replay) : Promise.resolve(replay);
         lines.then(
           (loaded) => {
             if (stopped) return;
             console.log(`kaki host: replaying ${loaded.length} transcript lines at ${speed}x`);
-            stopReplay = startReplay({ lines: loaded, hub, speed });
+            stopReplay = startReplay({
+              lines: loaded,
+              hub,
+              speed,
+              onAgenda: (index) => clock.advanceTo(index),
+              onEnd: endMeeting,
+            });
           },
           (error: unknown) => console.error('kaki host: could not start the replay', error),
         );

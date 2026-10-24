@@ -1,4 +1,5 @@
 import { llmFromEnv } from '../llm';
+import { scenarioFolder } from '../loadScenario';
 import type { KakiModule } from '../modules';
 import { createMeetingModule } from './meeting';
 
@@ -16,7 +17,7 @@ const replay = process.env.KAKI_REPLAY === '1';
 export const hostModules: KakiModule[] = [
   createMeetingModule({
     llm: llmFromEnv(),
-    replay,
+    replay: replay ? scenarioFolder() : undefined,
     // A live meeting always runs in real time.
     speed: replay ? positiveNumber('KAKI_REPLAY_SPEED', 1) : 1,
     notetakerIntervalMs: positiveNumber('KAKI_NOTETAKER_INTERVAL_MS', 7_000),

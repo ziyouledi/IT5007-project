@@ -30,8 +30,9 @@ afterEach(() => {
 describe('replay script', () => {
   it('ships a valid Pixel Kampung replay', async () => {
     const scenario = await loadScenario('pixel-kampung');
-    const loaded = await loadReplay(scenario);
+    const loaded = await loadReplay(scenario, 'pixel-kampung');
     expect(loaded.length).toBeGreaterThan(20);
+    expect(loaded.flatMap((line) => line.agendaIndex ?? [])).toEqual([1, 2, 3]);
   });
 
   it('rejects unknown speakers, lines out of order and empty text', () => {
@@ -49,6 +50,17 @@ describe('replay script', () => {
     ).toThrow(/back in time/);
     expect(() => parseReplay({ lines: [{ at: 0, speaker: 'Ada (Chef)', text: ' ' }] }, testScenario)).toThrow();
     expect(() => parseReplay([], testScenario)).toThrow(/lines/);
+  });
+
+  it('only accepts agenda markers that move forward through the agenda', () => {
+    const twoItems = { ...testScenario, agenda: [...testScenario.agenda, { title: 'Till', minutes: 2, ownerRole: 'cashier' }] };
+    const line = (agendaIndex: unknown) => ({ at: 0, speaker: 'Ada (Chef)', text: 'Next.', agendaIndex });
+
+    expect(parseReplay({ lines: [line(1)] }, twoItems)[0]).toMatchObject({ agendaIndex: 1 });
+    expect(() => parseReplay({ lines: [line(0)] }, twoItems)).toThrow(/agendaIndex/);
+    expect(() => parseReplay({ lines: [line(2)] }, twoItems)).toThrow(/agendaIndex/);
+    expect(() => parseReplay({ lines: [line(1), line(1)] }, twoItems)).toThrow(/agendaIndex/);
+    expect(() => parseReplay({ lines: [line('1')] }, twoItems)).toThrow(/agendaIndex/);
   });
 });
 
@@ -74,6 +86,25 @@ describe('replay feed', () => {
       audience: { kind: 'screen' },
       payload: { speaker: 'Ada (Chef)' },
     });
+  });
+
+  it('moves the agenda just before the marked line and says when the script is over', () => {
+    vi.useFakeTimers();
+    const hub = recordingHub();
+    const calls: string[] = [];
+    hub.publish = (event) => {
+      if (event.type === 'TRANSCRIPT_CHUNK') calls.push(`line: ${event.payload.text}`);
+    };
+
+    startReplay({
+      lines: [lines[0]!, { ...lines[1]!, agendaIndex: 1 }],
+      hub,
+      onAgenda: (index) => calls.push(`agenda ${index}`),
+      onEnd: () => calls.push('end'),
+    });
+    vi.advanceTimersByTime(10_000);
+
+    expect(calls).toEqual(['line: Morning.', 'agenda 1', 'line: Till is ready.', 'end']);
   });
 
   it('stops publishing once stopped', () => {
