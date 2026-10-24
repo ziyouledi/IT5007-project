@@ -1,3 +1,5 @@
+// Must stay the first import: later modules read process.env as they load.
+import './env';
 import { createApp } from './app';
 import { devModules } from './dev';
 import { hostModules } from './host';

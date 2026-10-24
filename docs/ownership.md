@@ -9,7 +9,7 @@ Two people build Kaki in parallel on top of this shared core.
 
 ## Shared: change only via a small reviewed PR
 
-`shared/**`, `server/src/{app,index,hub,tasks,modules,loadScenario}.ts`, `server/src/dev/**`,
+`shared/**`, `server/src/{app,index,env,hub,tasks,modules,loadScenario,llm}.ts`, `server/src/dev/**`,
 `web/src/{App.tsx,main.tsx}`, `web/src/kaki/**`, `web/src/ui/**`, `scenarios/*/scenario.json`,
 `scenarios/*/demo-events.json`, and root config files.
 
