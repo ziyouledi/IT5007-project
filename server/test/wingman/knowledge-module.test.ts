@@ -143,6 +143,33 @@ describe('knowledge module', () => {
     }
   });
 
+  it('does not search for a question raised on an earlier agenda item', async () => {
+    const search = vi.fn<SearchCompanyData>(async () => [fact]);
+    const fake = fakeHub();
+    const stop = start(search, fake.hub);
+
+    try {
+      fake.emit({
+        type: 'MEETING_RECORD_UPDATED',
+        audience: { kind: 'all' },
+        payload: {
+          agendaIndex: 1,
+          openQuestions: [
+            { id: 'q-old', text: 'Where do players quit?', forRole: 'game_designer', agendaIndex: 0 },
+            { id: 'q-new', text: 'Who owns the build?', forRole: 'producer', agendaIndex: 1 },
+          ],
+          elapsedSeconds: 1,
+          speakerTalkSeconds: {},
+        },
+      });
+      await waitFor(() => fake.published.length > 0, 'the fact card');
+      await settle();
+      expect(search.mock.calls).toEqual([['Who owns the build?', 'producer']]);
+    } finally {
+      stop();
+    }
+  });
+
   it('skips questions without a role and warns once', async () => {
     const search = vi.fn<SearchCompanyData>(async () => [fact]);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

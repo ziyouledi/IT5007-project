@@ -43,6 +43,11 @@ function handleEvent(
   const { agendaIndex } = event.payload;
   for (const question of event.payload.openQuestions) {
     if (log.settled.has(question.id) || log.running.has(question.id)) continue;
+    if (question.agendaIndex !== undefined && question.agendaIndex < event.payload.agendaIndex) {
+      // Raised on an earlier agenda item: the meeting has moved on, so facts for it would only distract.
+      log.settled.add(question.id);
+      continue;
+    }
     if (question.forRole === undefined) {
       log.settled.add(question.id);
       console.warn(`kaki wingman: open question ${question.id} has no role, skipping company search`);

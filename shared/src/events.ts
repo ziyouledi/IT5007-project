@@ -11,6 +11,11 @@ export interface Question {
   id: string;
   text: string;
   forRole?: Role;
+  /**
+   * The agenda item the question was raised on. It stays in the record after the meeting moves on (the shared screen
+   * lists every unanswered question), but the Wingman and the visitor's quick replies only use the current item's.
+   */
+  agendaIndex?: number;
 }
 
 /**
@@ -129,7 +134,8 @@ function isQuestion(value: unknown, scenario: Scenario): value is Question {
     isObject(value) &&
     isString(value.id) &&
     isString(value.text) &&
-    (value.forRole === undefined || isRoleIn(scenario, value.forRole))
+    (value.forRole === undefined || isRoleIn(scenario, value.forRole)) &&
+    (value.agendaIndex === undefined || (Number.isInteger(value.agendaIndex) && (value.agendaIndex as number) >= 0))
   );
 }
 

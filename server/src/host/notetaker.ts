@@ -1042,6 +1042,9 @@ export function createNotetaker({ scenario, tasks, llm, agendaIndex, onAgendaInd
     }
     openQuestions = openQuestions.filter((question) => !answered.has(question.id));
 
+    // A batch that moves the meeting on usually raises its questions after the hand-over, so they belong to the new item.
+    const raisedOn =
+      reply.agendaIndex !== undefined && reply.agendaIndex > agendaIndex() ? reply.agendaIndex : contextAgendaIndex;
     for (const question of reply.newQuestions) {
       // Something that is not phrased as a question (a note or a fragment) is not worth keeping open.
       if (!question.text.includes('?')) {
@@ -1056,7 +1059,7 @@ export function createNotetaker({ scenario, tasks, llm, agendaIndex, onAgendaInd
         continue;
       }
       questionCount += 1;
-      openQuestions.push({ id: `q-${questionCount}`, ...question });
+      openQuestions.push({ id: `q-${questionCount}`, ...question, agendaIndex: raisedOn });
     }
 
     // If a participant reverses their decision on the same agenda item in the current batch ("Actually wait no, I changed my mind — scrap that..."),

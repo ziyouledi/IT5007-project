@@ -382,9 +382,15 @@ export function MeetingGrid({
   const starterChips = useMemo(() => {
     const viewerSeatName = scenario.attendees.find((a) => a.role === role)?.name;
     const latestRecord = [...screenEvents].reverse().find((e) => e.type === 'MEETING_RECORD_UPDATED');
-    const openQs = latestRecord?.type === 'MEETING_RECORD_UPDATED' ? latestRecord.payload.openQuestions : [];
+    // Only the current item's questions: one left open on an earlier item is not a useful thing to say now.
+    const openQs =
+      latestRecord?.type === 'MEETING_RECORD_UPDATED'
+        ? latestRecord.payload.openQuestions.filter(
+            (q) => q.agendaIndex === undefined || q.agendaIndex === activeAgendaIndex,
+          )
+        : [];
     return starterChipsFromAgendaItem(activeItem, viewerSeatName, openQs);
-  }, [activeItem, role, scenario.attendees, screenEvents]);
+  }, [activeItem, activeAgendaIndex, role, scenario.attendees, screenEvents]);
 
   const sendQuickLine = useCallback(
     (text: string) => {

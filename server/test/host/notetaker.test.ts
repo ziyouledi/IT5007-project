@@ -135,9 +135,9 @@ describe('notetaker on canned Nanyang Kopi & Toast slices', () => {
       ['producer', 'mattermost_post', 'SUGGESTED'],
     ]);
     expect(notetaker.state().openQuestions).toEqual([
-      { id: 'q-1', text: 'Who counts as a regular?', forRole: 'producer' },
-      { id: 'q-2', text: 'Where does a solo diner sit while the queue clears?', forRole: 'producer' },
-      { id: 'q-3', text: 'Who sets the booth socket timer before 8?', forRole: 'producer' },
+      { id: 'q-1', text: 'Who counts as a regular?', forRole: 'producer', agendaIndex: 0 },
+      { id: 'q-2', text: 'Where does a solo diner sit while the queue clears?', forRole: 'producer', agendaIndex: 0 },
+      { id: 'q-3', text: 'Who sets the booth socket timer before 8?', forRole: 'producer', agendaIndex: 2 },
     ]);
     expect(notetaker.state().status).toBe('ok');
   });
