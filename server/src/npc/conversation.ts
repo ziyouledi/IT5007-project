@@ -1270,15 +1270,26 @@ export class NpcConversation<Clip> {
     const ownerTradeOff = discussion?.tradeOffs.find((tradeOff) => tradeOff.attendee === owner);
     const otherTradeOff =
       discussion?.tradeOffs.find((tradeOff) => tradeOff.attendee === other) ?? ownerTradeOff;
-    const ownerView = discussion?.openingViews.find((view) => view.attendee === owner)?.view;
-    const otherView = discussion?.openingViews.find((view) => view.attendee === other)?.view;
-    const discussionHint =
-      discussion === undefined
-        ? ''
-        : ` Ground their turns in these real-world facts and examples in their own natural words (never read this note aloud, never recite a script, and make sure ${other} responds directly to what ${owner} actually says): ${owner}'s context is "${ownerView ?? ownerTradeOff?.tradeOff ?? 'the item is still open'}"; ${other}'s competing catch is "${otherView ?? otherTradeOff?.tradeOff ?? 'the item is still open'}".`;
     const humanRoleId =
       scenario.roles.find((r) => r.id === this.human?.role || r.label === this.human?.role)?.id ??
       scenario.attendees.find((a) => a.name === this.human?.name)?.role;
+    // Opening views are written as a chain ("Cut the plugs!" -> "Cutting plugs makes sense, but..."). When the visitor
+    // sits in a seat that has one, that line is never said aloud, so a later view would answer an idea nobody raised.
+    // Use the neutral trade-off facts instead, and say plainly that nothing has been proposed yet.
+    const visitorSeat = scenario.attendees.find((attendee) => attendee.role === humanRoleId)?.name;
+    const visitorViewSkipped =
+      visitorSeat !== undefined && (discussion?.openingViews ?? []).some((view) => view.attendee === visitorSeat);
+    const viewOf = (name: string): string | undefined =>
+      visitorViewSkipped ? undefined : discussion?.openingViews.find((view) => view.attendee === name)?.view;
+    const ownerView = viewOf(owner);
+    const otherView = viewOf(other);
+    const nothingProposedYet = visitorViewSkipped
+      ? ` Nobody has proposed a fix on this item yet: ${owner} must not react to, agree with or reject any earlier idea (there is none), and ${this.human.name} has not spoken on it yet.`
+      : '';
+    const discussionHint =
+      discussion === undefined
+        ? ''
+        : ` Ground their turns in these real-world facts and examples in their own natural words (never read this note aloud, never recite a script, and make sure ${other} responds directly to what ${owner} actually says): ${owner}'s context is "${ownerView ?? ownerTradeOff?.tradeOff ?? 'the item is still open'}"; ${other}'s competing catch is "${otherView ?? otherTradeOff?.tradeOff ?? 'the item is still open'}".${nothingProposedYet}`;
     const visitorOwnsItem = item?.ownerRole !== undefined && humanRoleId === item.ownerRole;
     const itemIndex = Math.max(
       0,

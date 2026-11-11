@@ -773,6 +773,58 @@ describe('NpcConversation', () => {
     expect(h.calls).toHaveLength(2);
   });
 
+  it('does not brief from an opening view that answers the visitor\'s own, unspoken view', async () => {
+    const briefScenario = {
+      ...testScenario,
+      roles: [
+        { id: 'chef', label: 'Chef' },
+        { id: 'cashier', label: 'Cashier' },
+        { id: 'baker', label: 'Baker' },
+        { id: 'host', label: 'Host', facilitator: true },
+      ],
+      attendees: [
+        { name: 'Ada', role: 'chef', zoomDisplayName: 'Ada (Chef)' },
+        { name: 'Bao', role: 'cashier', zoomDisplayName: 'Bao (Cashier)' },
+        { name: 'Cy', role: 'baker', zoomDisplayName: 'Cy (Baker)' },
+        { name: 'Sam', role: 'host', zoomDisplayName: 'Sam (Host)' },
+      ],
+      agenda: [
+        {
+          title: 'Prep',
+          minutes: 5,
+          ownerRole: 'chef',
+          discussion: {
+            openingViews: [
+              { attendee: 'Ada', view: 'Cut the booth plugs during breakfast.' },
+              { attendee: 'Bao', view: 'Cutting booth plugs makes sense, but solo diners need seats.' },
+              { attendee: 'Cy', view: 'And Auntie cannot police tables.' },
+            ],
+            tradeOffs: [
+              { attendee: 'Ada', role: 'chef', tradeOff: 'Booth plugs: twelve sockets on one switch.', question: 'Plugs?' },
+              { attendee: 'Bao', role: 'cashier', tradeOff: 'Solo diners: 60% carry hot trays.', question: 'Seats?' },
+              { attendee: 'Cy', role: 'baker', tradeOff: 'Auntie: will quit if she polices tables.', question: 'Auntie?' },
+            ],
+          },
+        },
+      ],
+      npcs: [
+        { attendee: 'Bao', voice: 'v2', personality: 'Cashier', agenda: 'Seats', concerns: [] },
+        { attendee: 'Cy', voice: 'v3', personality: 'Baker', agenda: 'Staff', concerns: [] },
+        { attendee: 'Sam', voice: 'v4', role: 'host' as const, personality: 'Host', agenda: 'Run it', concerns: [] },
+      ],
+    };
+    const h = harness(briefScenario as unknown as typeof scenario);
+    // The visitor sits in Ada's seat, whose opening view ("Cut the booth plugs") is never said aloud.
+    h.conversation.setHuman({ name: 'Josh', role: 'Chef' });
+    h.conversation.agendaMoved('Prep');
+    await vi.advanceTimersByTimeAsync(5000);
+    const cue = h.calls[0]?.messages.at(-1)?.content ?? '';
+    expect(cue).toContain('We just started agenda item "Prep"');
+    expect(cue).not.toContain('Cutting booth plugs makes sense');
+    expect(cue).toContain('Solo diners: 60% carry hot trays.');
+    expect(cue).toContain('Nobody has proposed a fix on this item yet');
+  });
+
   it('answers typed text without any voice behind it, and puts it in the transcript', async () => {
     const h = harness();
     h.conversation.humanTyped('  What is the status?  ');
