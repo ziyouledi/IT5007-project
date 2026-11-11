@@ -11,7 +11,7 @@
         "facts": [
           "We have 10 stools in the storeroom to set up a Laptop & Solo Window Bar, and we can switch off booth wall plugs from 8–10 AM with table signs so 62-year-old Auntie Mary never has to confront anyone.",
           "Our head chef caught the unplugged fridge at 6 AM, threw out all the old food with a signed disposal receipt, and restocked with fresh supplies delivered this morning.",
-          "We only lose $0.50 on single $10 delivery sets—switching GrabFood to $50 Office Platters (5-set bundles) makes $5 profit per platter even after the 32% fee without pulling staff off the counter.",
+          "We only lose $0.40 on single $10 delivery sets—switching GrabFood to $50 Office Platters (5-set bundles) makes $5 profit per platter even after the 32% fee without pulling staff off the counter.",
           "The kiosk has a 'Subtitle Mode' that shows plain English ('Black Coffee, No Sugar') on screen for customers while still printing traditional Kopi names on the kitchen ticket for Uncle Lim."
         ],
         "responsibility": "Make sure our plans work for Auntie Mary and the counter staff without breaking food hygiene or losing money."
@@ -215,12 +215,12 @@
       "minutes": 8,
       "ownerRole": "marketing_lead",
       "contested": true,
-      "decision": "how do we stop losing $0.50 on every GrabFood order when 40 rainy-day orders are queued and riders are blocking the counter?",
+      "decision": "how do we stop losing $0.40 on every GrabFood order when 40 rainy-day orders are queued and riders are blocking the counter?",
       "discussion": {
         "openingViews": [
           {
             "attendee": "Daniel",
-            "view": "GrabFood hiked their commission to 32% overnight so we're losing 50 cents on every $10 breakfast set—and because it's pouring rain, 40 office orders just came in at once! We can't just cancel 40 orders on Opening Day or those offices will boycott us!"
+            "view": "GrabFood hiked their commission to 32% overnight so we're losing 40 cents on every $10 breakfast set—and because it's pouring rain, 40 office orders just came in at once! We can't just cancel 40 orders on Opening Day or those offices will boycott us!"
           },
           {
             "attendee": "Arjun",
@@ -228,14 +228,14 @@
           },
           {
             "attendee": "Wei Ling",
-            "view": "We can't bleed 50 cents per order all morning, and my two counter staff can't leave the toast line—unless we switch the app to $50 Office Platters that actually make $5 profit!"
+            "view": "We can't bleed 40 cents per order all morning, and my two counter staff can't leave the toast line—unless we switch the app to $50 Office Platters that actually make $5 profit!"
           }
         ],
         "tradeOffs": [
           {
             "attendee": "Wei Ling",
             "role": "producer",
-            "tradeOff": "Losing $0.50 per single order: Grab's 32% cut makes single $10 sets lose $0.50, while $50 Office Platters (5-set bundles) make $5 profit per platter.",
+            "tradeOff": "Losing $0.40 per single order: Grab's 32% cut makes single $10 sets lose $0.40, while $50 Office Platters (5-set bundles) make $5 profit per platter.",
             "question": "Do we switch the app to $50 Office Platters, turn off GrabFood, or eat the loss on single sets today?"
           },
           {
@@ -390,31 +390,31 @@
       "playable": true,
       "role": "participant",
       "speechStyle": "Sharp, no-nonsense Singaporean operations boss who counts every dollar, food safety step, counter hygiene rule, and staff shift. Speaks directly with zero fluff ('Bottom line is...', 'Who is going to enforce that?', 'Do you know what an SFA shutdown means?'). Uses natural Singaporean cadence without forced slang.",
-      "hiddenGoal": "She wants to keep 62-year-old Auntie Mary from quitting, pass the 9:00 AM health inspection without losing $1,800 in breakfast sales, and stop losing $0.50 per GrabFood order.",
+      "hiddenGoal": "She wants to keep 62-year-old Auntie Mary from quitting, pass the 9:00 AM health inspection without losing $1,800 in breakfast sales, and stop losing $0.40 per GrabFood order.",
       "personality": "Operations Director. Pragmatic, fiercely protective of her outlet staff and kitchen compliance, and allergic to ideas that sound nice online but fail on a busy shop floor.",
-      "agenda": "Make sure every decision works on the shop floor without forcing Auntie Mary to fight customers, risking a 9 AM health inspector shutdown, or losing $0.50 on every delivery order.",
+      "agenda": "Make sure every decision works on the shop floor without forcing Auntie Mary to fight customers, risking a 9 AM health inspector shutdown, or losing $0.40 on every delivery order.",
       "concerns": [
         "62-year-old Auntie Mary got screamed at by a laptop camper in a suit yesterday and is crying in the back, so she refuses to police seats or touch customers' belongings.",
         "16 of our 28 seats are blocked for 2 hours every morning by laptop users who only bought a $2 coffee, costing us $420 in lost breakfast sales.",
         "A customer is in the hospital because last night's new part-time cleaner unplugged the fridge for 3 hours to charge his phone; health inspectors arrive at 9:00 AM and closing the kitchen loses $1,800.",
-        "GrabFood's 32% fee makes us lose $0.50 on every single $10 breakfast set, and our two counter staff cannot leave the toast line to run orders upstairs in the rain."
+        "GrabFood's 32% fee makes us lose $0.40 on every single $10 breakfast set, and our two counter staff cannot leave the toast line to run orders upstairs in the rain."
       ],
       "knows": [
         "Our head chef caught the unplugged fridge at 6:00 AM, threw out 100% of the old food with a signed disposal receipt, and restocked with fresh morning supplies—and our insurance covers $3,000 in medical goodwill for the customer.",
-        "Single $10 delivery sets lose $0.50 after Grab's 32% cut, whereas a $50 Office Platter (5-set bundle) uses shared packaging and makes $5 profit per platter.",
+        "Single $10 delivery sets lose $0.40 after Grab's 32% cut, whereas a $50 Office Platter (5-set bundle) uses shared packaging and makes $5 profit per platter.",
         "65-year-old Uncle Lim and our kopi uncles read traditional Kopi names at a glance and threatened to walk out if kitchen tickets print 'Latte'."
       ],
       "withRoles": {
         "producer": "Your fellow operations lead. Push hard on floor realism, protecting Auntie Mary, passing the 9 AM health inspection, and exact dollar profit.",
         "lead_programmer": "Rely on his Kiosk Subtitle Mode and back-room power switch so staff don't have to manually police laptops or fight the kiosk queue.",
         "game_designer": "Back her up on protecting Uncle Lim's kitchen tickets and using our 6 AM fresh kitchen supplies.",
-        "marketing_lead": "Hold him accountable: make sure we handle the hospitalized customer's family and 8 AM reporters without losing $1,800 in kitchen sales, and stop losing $0.50 per Grab order.",
+        "marketing_lead": "Hold him accountable: make sure we handle the hospitalized customer's family and 8 AM reporters without losing $1,800 in kitchen sales, and stop losing $0.40 per Grab order.",
         "studio_manager": "Back up the host by challenging any surface-level proposal that ignores the 9 AM health inspection, Auntie Mary's wellbeing, or delivery margins."
       },
       "tensions": [
         {
           "with": "Daniel",
-          "about": "on the food poisoning crisis, how to handle the hospitalized customer's family, the part-time cleaner, and 8 AM press without losing $1,800 in morning sales; on GrabFood, how to stop losing $0.50 per order without cancelling 40 rainy-day orders"
+          "about": "on the food poisoning crisis, how to handle the hospitalized customer's family, the part-time cleaner, and 8 AM press without losing $1,800 in morning sales; on GrabFood, how to stop losing $0.40 per order without cancelling 40 rainy-day orders"
         },
         {
           "with": "Mei",
@@ -443,7 +443,7 @@
         "Moving laptop users to the 10-stool window bar with friendly 8–10 AM table signs keeps office regulars happy while freeing booths for diners."
       ],
       "withRoles": {
-        "producer": "Your budget and ops boss. Make sure we take care of the hospitalized customer's family and 8 AM press, and stop losing $0.50 per Grab set without cancelling 40 rainy-day orders.",
+        "producer": "Your budget and ops boss. Make sure we take care of the hospitalized customer's family and 8 AM press, and stop losing $0.40 per Grab set without cancelling 40 rainy-day orders.",
         "lead_programmer": "Work with him on switching GrabFood to $50 Office Platters and sending our 10%-off direct pickup code to nearby offices.",
         "game_designer": "Work with her on showing our 6 AM fresh kitchen delivery and keeping solo diners and laptop users happy.",
         "studio_manager": "The meeting host. Make sure we protect our public reputation with the hospitalized family, the press, and nearby offices."
@@ -451,7 +451,7 @@
       "tensions": [
         {
           "with": "Wei Ling",
-          "about": "how to handle the hospitalized customer's family, the cleaner who unplugged the fridge, and 8 AM reporters, plus how to handle 40 rainy-day GrabFood orders without losing $0.50 each"
+          "about": "how to handle the hospitalized customer's family, the cleaner who unplugged the fridge, and 8 AM reporters, plus how to handle 40 rainy-day GrabFood orders without losing $0.40 each"
         },
         {
           "with": "Arjun",
