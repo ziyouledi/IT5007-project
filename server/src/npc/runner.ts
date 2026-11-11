@@ -22,7 +22,7 @@ import {
   type NpcStateMessage,
   type Scenario,
 } from '@kaki/shared';
-import { OPENING_PREFIX, liveNextItemLine, liveOpeningLine, openingLine } from '../host/opening';
+import { OPENING_PREFIX, liveNextItemLine, liveOpeningLine, openingLine, spokenTopicLead } from '../host/opening';
 import type { ChatMessage } from '../llm';
 import { createRoomToken } from '../livekit';
 import { NpcConversation } from './conversation';
