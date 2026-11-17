@@ -1043,8 +1043,11 @@ export function createNotetaker({ scenario, tasks, llm, agendaIndex, onAgendaInd
     openQuestions = openQuestions.filter((question) => !answered.has(question.id));
 
     // A batch that moves the meeting on usually raises its questions after the hand-over, so they belong to the new item.
-    const raisedOn =
-      reply.agendaIndex !== undefined && reply.agendaIndex > agendaIndex() ? reply.agendaIndex : contextAgendaIndex;
+    const movedTo =
+      reply.agendaIndex !== undefined && reply.agendaIndex > agendaIndex()
+        ? reply.agendaIndex
+        : undefined;
+    const raisedOn = movedTo ?? contextAgendaIndex;
     for (const question of reply.newQuestions) {
       // Something that is not phrased as a question (a note or a fragment) is not worth keeping open.
       if (!question.text.includes('?')) {
@@ -1067,10 +1070,6 @@ export function createNotetaker({ scenario, tasks, llm, agendaIndex, onAgendaInd
     // The same boundary drops the earlier decision context, so a corrected decision cannot be mixed with the one it replaced.
     const supersedeAt = batch.findIndex((line) => SUPERSEDES.test(line.text));
     const supersedes = supersedeAt >= 0;
-    const movedTo =
-      reply.agendaIndex !== undefined && reply.agendaIndex > agendaIndex()
-        ? reply.agendaIndex
-        : undefined;
     // A model-selected decision quote may only resolve against the accepted lines of the current agenda item: a
     // correction restarts the item at the correction line, and an agenda move leaves the previous item's context behind.
     const decisionPool = supersedes
