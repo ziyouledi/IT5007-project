@@ -53,7 +53,9 @@ function starterChipsFromAgendaItem(
   }
   const fallback = [
     "Sam, could you summarize the two main options we're choosing between right now?",
-    "That plan sounds solid to me — let's lock in both parts for tomorrow morning.",
+    // Not a decision: a one-tap "lock it in" line let a visitor close any item without addressing its trade-offs (#53).
+    // Locking a decision is the TypeBar's job, which only enables once the room has heard one.
+    'Which catch is still open before we lock a plan in?',
   ];
   for (const fb of fallback) {
     if (!chips.includes(fb)) chips.push(fb);
