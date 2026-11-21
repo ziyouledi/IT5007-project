@@ -755,6 +755,40 @@ describe('meeting kind security regressions', () => {
     expect((await practiceJoin(port, 'Ben')).status).toBe(200);
   });
 
+  it('unlocks setup and reopens once everyone left a started team meeting and it was released', async () => {
+    let people: Array<{ name: string }> = [];
+    const { app, port } = await openModeApp({
+      roomRoster: async () => people,
+      rejoinGraceMs: 40,
+      admissionReservationMs: 0,
+    });
+    await connectService(port);
+    expect((await request(port, '/api/meeting/open', 'POST')).status).toBe(200);
+    const joined = await request(port, '/api/livekit/token', 'POST', {
+      participantName: 'Alice',
+      participantRole: 'operations_director',
+    });
+    expect(joined.status).toBe(200);
+    people = [{ name: 'Alice' }];
+    expect((await request(port, '/api/meeting/start', 'POST')).status).toBe(200);
+    expect(((await (await request(port, '/api/setup', 'GET')).json()) as { started: boolean }).started).toBe(true);
+
+    // Alice leaves without ending; the empty-room grace abandons and releases the meeting.
+    people = [];
+    await waitFor(
+      () => (app.session.abandoned() && app.session.kind() === undefined ? true : undefined),
+      'the empty started meeting to be released',
+    );
+    expect(app.session.phase()).toBe('running');
+    const setup = (await (await request(port, '/api/setup', 'GET')).json()) as { started: boolean; setup: unknown };
+    expect(setup.started).toBe(false);
+    expect((await request(port, '/api/setup', 'PUT', setup.setup)).status).toBe(200);
+
+    expect((await request(port, '/api/meeting/open', 'POST')).status).toBe(200);
+    expect(app.session.kind()).toBe('real');
+    expect(app.session.phase()).toBe('lobby');
+  });
+
   it('admits only one of two same-name practice joins without the capability', async () => {
     const { app, port } = await authModeApp();
     const [first, second] = await Promise.all([

@@ -28,10 +28,12 @@ function sendSetupLocked(response: ServerResponse, lock: 'starting' | 'started')
 export async function handleGetSetup(call: RouteCall): Promise<void> {
   const { response, context } = call;
   const phase = context.session.phase();
+  // Locked exactly when setup writes are refused, so an abandoned, released meeting reads as over.
+  const live = phase === 'running' && context.setupLocked() === 'started';
   sendJson(response, 200, {
-    // Only a running meeting shows its seal; every other phase edits the next meeting's draft.
-    setup: phase === 'running' ? (context.session.sealed() ?? context.session.draft()) : context.session.draft(),
-    started: phase === 'running',
+    // Only a live running meeting shows its seal; every other phase edits the next meeting's draft.
+    setup: live ? (context.session.sealed() ?? context.session.draft()) : context.session.draft(),
+    started: live,
     phase,
     ...(context.session.kind() === undefined ? {} : { kind: context.session.kind() }),
   });

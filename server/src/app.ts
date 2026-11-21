@@ -1034,7 +1034,9 @@ export async function createApp({
   /** Setup writes are refused from the moment Start begins until it commits or fails. */
   function setupLocked(): 'starting' | 'started' | undefined {
     const phase = session.phase();
-    if (phase === 'running') return 'started';
+    // A running meeting everyone left, which the empty-room grace released, is over: the owner
+    // edits the next plan and opens a fresh room (the open consumes it), instead of being locked out.
+    if (phase === 'running') return session.abandoned() && session.kind() === undefined ? undefined : 'started';
     if (phase === 'starting') return 'starting';
     return undefined;
   }
