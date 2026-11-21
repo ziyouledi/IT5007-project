@@ -1043,8 +1043,10 @@ export function createNotetaker({ scenario, tasks, llm, agendaIndex, onAgendaInd
     openQuestions = openQuestions.filter((question) => !answered.has(question.id));
 
     // A batch that moves the meeting on usually raises its questions after the hand-over, so they belong to the new item.
+    // Compare with the item this pass started on, not the live one: the meeting can move on while the model is thinking,
+    // and the questions it then reports for the new item must not be stamped on the old one.
     const movedTo =
-      reply.agendaIndex !== undefined && reply.agendaIndex > agendaIndex()
+      reply.agendaIndex !== undefined && reply.agendaIndex > contextAgendaIndex
         ? reply.agendaIndex
         : undefined;
     const raisedOn = movedTo ?? contextAgendaIndex;
@@ -1199,7 +1201,8 @@ export function createNotetaker({ scenario, tasks, llm, agendaIndex, onAgendaInd
     } else {
       agendaContext = [...agendaContext, ...batch].slice(-MAX_AGENDA_CONTEXT_LINES);
     }
-    if (movedTo !== undefined) onAgendaIndex?.(movedTo);
+    // Never move the live meeting backwards when it went further on its own while the model was thinking.
+    if (movedTo !== undefined && movedTo > agendaIndex()) onAgendaIndex?.(movedTo);
   }
 
   return {

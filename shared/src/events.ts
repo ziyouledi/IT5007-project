@@ -135,7 +135,7 @@ function isQuestion(value: unknown, scenario: Scenario): value is Question {
     isString(value.id) &&
     isString(value.text) &&
     (value.forRole === undefined || isRoleIn(scenario, value.forRole)) &&
-    (value.agendaIndex === undefined || (Number.isInteger(value.agendaIndex) && (value.agendaIndex as number) >= 0))
+    (value.agendaIndex === undefined || isAgendaIndex(value.agendaIndex))
   );
 }
 

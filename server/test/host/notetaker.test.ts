@@ -297,6 +297,44 @@ describe('notetaker record keeping', () => {
     expect(notetaker.state().status).toBe('stale');
   });
 
+  it('stamps questions on the new item when the meeting moves on while the model is thinking', async () => {
+    let release: (value: string) => void = () => {};
+    const { notetaker, feed, onAgendaIndex, setAgendaIndex } = setup(
+      () => new Promise<string>((resolve) => (release = resolve)),
+    );
+
+    feed(slice(0, 30));
+    const pass = notetaker.run();
+    setAgendaIndex(1); // the host moves on before the reply arrives
+    release(
+      reply({
+        agendaIndex: 1,
+        newQuestions: [{ text: 'Where does a solo diner sit while the queue clears?', forRole: 'producer' }],
+      }),
+    );
+    await pass;
+
+    expect(notetaker.state().openQuestions).toEqual([
+      expect.objectContaining({ text: 'Where does a solo diner sit while the queue clears?', agendaIndex: 1 }),
+    ]);
+    expect(onAgendaIndex).not.toHaveBeenCalled();
+  });
+
+  it('does not move the meeting back when it went further while the model was thinking', async () => {
+    let release: (value: string) => void = () => {};
+    const { notetaker, feed, onAgendaIndex, setAgendaIndex } = setup(
+      () => new Promise<string>((resolve) => (release = resolve)),
+    );
+
+    feed(slice(0, 30));
+    const pass = notetaker.run();
+    setAgendaIndex(2);
+    release(reply({ agendaIndex: 1 }));
+    await pass;
+
+    expect(onAgendaIndex).not.toHaveBeenCalled();
+  });
+
   it('runs one pass at a time', async () => {
     let release: (value: string) => void = () => {};
     const { llm, notetaker, feed } = setup(() => new Promise<string>((resolve) => (release = resolve)));
