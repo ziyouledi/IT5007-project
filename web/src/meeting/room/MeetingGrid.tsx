@@ -32,11 +32,14 @@ export function MeetingGrid({
   role,
   onOpenKaki,
   onKakiBadgeChange,
+  onLeave,
   sharedAudience = 'screen',
 }: {
   role: string;
   onOpenKaki?: () => void;
   onKakiBadgeChange?: (count: number) => void;
+  /** Leaves the meeting. LiveKit's own Leave only disconnects, which the page cannot tell apart from a reload. */
+  onLeave?: () => void;
   /** A team participant reads the seat-bound projection; the owner and practice keep the screen. */
   sharedAudience?: 'screen' | 'participant';
 }) {
@@ -585,7 +588,21 @@ export function MeetingGrid({
           lineRejection={commandRejection}
           onPauseChange={(paused) => sendToServer({ type: 'SET_PAUSED', paused })}
         />
-        <ControlBar controls={{ screenShare: false, chat: false }} />
+        <div className="kd-controls">
+          <ControlBar controls={{ screenShare: false, chat: false, leave: onLeave === undefined }} />
+          {onLeave === undefined ? null : (
+            <button
+              type="button"
+              className="lk-button lk-disconnect-button"
+              onClick={() => {
+                void room.disconnect().catch(() => undefined);
+                onLeave();
+              }}
+            >
+              Leave
+            </button>
+          )}
+        </div>
         <RoomAudioRenderer />
       </div>
     </StageContext.Provider>

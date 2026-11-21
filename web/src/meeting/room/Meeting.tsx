@@ -372,6 +372,12 @@ export default function Meeting({
               sharedAudience={variant === 'participant' ? 'participant' : 'screen'}
               onOpenKaki={() => setPane('kaki')}
               onKakiBadgeChange={setKakiBadgeCount}
+              onLeave={() => {
+                // Cleared first, so the disconnect this causes is not read as a dropped connection.
+                activeSession.current = undefined;
+                clearStoredJoin(variant);
+                setSession(undefined);
+              }}
             />
           </ErrorBoundary>
           <CleanDisconnectOnUnload />

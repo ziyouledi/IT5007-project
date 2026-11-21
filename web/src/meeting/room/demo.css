@@ -85,6 +85,8 @@ select.kd-field { appearance: none; cursor: pointer; background-image: linear-gr
 .kd-stage .lk-button { border-radius: 999px; font-weight: 600; color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); }
 .kd-stage .lk-button:hover { background: var(--color-bg-raised); }
 .kd-stage .lk-button[data-lk-enabled="false"] { background: var(--color-danger-soft); color: var(--color-danger); }
+.kd-stage .kd-controls { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.kd-stage .kd-controls .lk-control-bar { margin: 0; }
 .kd-stage .lk-disconnect-button { background: var(--color-danger); color: #fff; border-color: transparent; }
 .kd-banner { position: absolute; left: 50%; transform: translateX(-50%); top: 14px; z-index: 5; max-width: 90%; padding: 7px 15px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--color-host-soft); border: 1px solid color-mix(in srgb, var(--color-host) 35%, transparent); color: var(--color-host-text); backdrop-filter: blur(10px); }
 .kd-banner[data-tone="error"] { background: var(--color-danger-soft); border-color: color-mix(in srgb, var(--color-danger) 40%, transparent); color: var(--color-danger); }
