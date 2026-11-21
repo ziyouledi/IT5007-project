@@ -334,6 +334,7 @@ export function createTaskStore({
         return;
       }
       case 'END_MEETING':
+      case 'LEAVE_MEETING':
       case 'NEW_MEETING':
       case 'NEXT_AGENDA_ITEM':
       case 'SET_HOST_MODE':

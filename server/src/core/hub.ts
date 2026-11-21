@@ -103,6 +103,8 @@ export interface Hub {
 export interface MeetingHub extends Hub {
   /** The only way to publish a MEETING_RESET; `publish` refuses that event. */
   publishMeetingReset(event: KakiEvent): void;
+  /** Run a command the server itself decided on, through every handler, with the shared screen's authority. */
+  runServerCommand(command: KakiCommand): Promise<void>;
 }
 
 /** Create the `/ws` hub attached to an existing HTTP server; the scenario is read through a getter. */
@@ -556,6 +558,12 @@ export function createHub(httpServer: Server, activeScenario: () => Scenario, op
     },
     onCommand(handler) {
       commandHandlers.push(handler);
+    },
+    async runServerCommand(command) {
+      for (const handler of commandHandlers) {
+        const effect = await handler(command, { kind: 'screen' });
+        await effect?.commit();
+      }
     },
     requestStart(request) {
       if (serviceSockets.size === 0) return false;

@@ -21,6 +21,11 @@ export type KakiCommand =
   | { type: 'SYNC_TASK'; taskId: string }
   /** Screen only. Ends the meeting; `silent` skips the spoken closing line (nobody is left to hear it). */
   | { type: 'END_MEETING'; silent?: boolean }
+  /**
+   * A seated person pressed Leave. When nobody else is left in the room, the server ends the
+   * meeting exactly as End meeting does, so the last person out never has to find that button.
+   */
+  | { type: 'LEAVE_MEETING' }
   /** Screen only. Throws away the meeting, restored or not, and its saved copy, so the next line starts fresh. */
   | { type: 'NEW_MEETING' }
   /** Screen only. The host moves the meeting on to the next agenda item. */
@@ -59,6 +64,7 @@ const COMMAND_TYPES: readonly KakiCommand['type'][] = [
   'MARK_DONE',
   'SYNC_TASK',
   'END_MEETING',
+  'LEAVE_MEETING',
   'NEW_MEETING',
   'NEXT_AGENDA_ITEM',
   'SET_HOST_MODE',
@@ -73,7 +79,7 @@ function isCommandType(value: unknown): value is KakiCommand['type'] {
 /** Validate unknown data (such as JSON from a socket) as a command for the scenario. */
 export function isKakiCommand(value: unknown, scenario: Scenario): value is KakiCommand {
   if (!isObject(value) || !isCommandType(value.type)) return false;
-  if (value.type === 'NEXT_AGENDA_ITEM' || value.type === 'NEW_MEETING') return true;
+  if (value.type === 'NEXT_AGENDA_ITEM' || value.type === 'NEW_MEETING' || value.type === 'LEAVE_MEETING') return true;
   if (value.type === 'SET_HOST_MODE') return typeof value.human === 'boolean';
   if (value.type === 'SET_PAUSED') return typeof value.paused === 'boolean';
   if (value.type === 'HUMAN_LINE') {

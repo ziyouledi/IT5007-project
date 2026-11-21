@@ -870,6 +870,39 @@ export async function createApp({
     return hostIdentityOf(session.active()).seat;
   }
 
+  // Leave ends the meeting for the last person out: a practice visitor alone with the AI, or the
+  // last person of a team meeting. Anyone else still in the room (or just admitted and on the way
+  // in) keeps it running. A roster outage ends nothing: the empty-room grace still applies.
+  hub.onCommand(async (command, sender) => {
+    if (command.type !== 'LEAVE_MEETING') return;
+    const seat = audienceRole(sender);
+    if (seat === undefined) throw new CommandError('Only a person seated in this meeting can leave it');
+    const key = seatKey(seat);
+    if (!session.holders().some((holder) => seatKey(holder.seat) === key)) {
+      throw new CommandError('Only a person seated in this meeting can leave it');
+    }
+    if (session.phase() !== 'running') return;
+    const forMeetingId = meeting.id;
+    const forGeneration = session.generation();
+    const roster = await roomRoster(watchedRoom ?? demoRoomName(session.active(), meeting.id));
+    if (roster === undefined) return;
+    if (meeting.id !== forMeetingId || session.generation() !== forGeneration || session.phase() !== 'running') return;
+    const others = roster.filter(
+      (person) =>
+        isHumanParticipant(person.name, packNpcNames) && (person.role === undefined || seatKey(person.role) !== key),
+    );
+    if (others.length > 0) return;
+    const arriving = reservations
+      .active(roster.map((person) => person.name))
+      .filter((reservation) => seatKey(reservation.seatId) !== key);
+    if (arriving.length > 0) return;
+    console.log(`kaki meeting: ${seat} left and nobody else is in the room; ending the meeting`);
+    // Not awaited: ending runs through the same handlers, and this command is still being handled.
+    void hub.runServerCommand({ type: 'END_MEETING' }).catch((error: unknown) => {
+      console.error('kaki meeting: could not end the meeting after the last person left', error);
+    });
+  });
+
   hub.onCommand((command, sender) => {
     if (command.type !== 'HUMAN_LINE') return;
     const seat = seatForSender(sender);

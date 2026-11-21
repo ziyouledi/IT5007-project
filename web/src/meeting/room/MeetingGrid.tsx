@@ -595,6 +595,8 @@ export function MeetingGrid({
               type="button"
               className="lk-button lk-disconnect-button"
               onClick={() => {
+                // The server ends the meeting when this was the last person in the room.
+                sendToServer({ type: 'LEAVE_MEETING' });
                 void room.disconnect().catch(() => undefined);
                 onLeave();
               }}
