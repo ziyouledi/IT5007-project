@@ -2,7 +2,13 @@
 
 A meeting assistant that gives every seat a private wingman.
 
-[Try Kaki](https://green-sky-0c9a41800.4.azurestaticapps.net) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Setup automation](#setup-automation) · [Contents](#contents) · [Poster](docs/poster/kaki-a1-poster.pdf)
+[Try Kaki](https://green-sky-0c9a41800.4.azurestaticapps.net) · [Demo video](#demo-video) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Setup automation](#setup-automation) · [Contents](#contents) · [Poster](docs/poster/kaki-a1-poster.pdf)
+
+### Demo video
+
+https://github.com/user-attachments/assets/a58a7483-8770-4e9d-8917-85835a87b9cb
+
+*Two minutes of a practice meeting: Kaki hosts, the wingman briefs Alex before they answer, and the tasks Alex decides on become a Gitea issue, Mattermost posts, an email, a calendar event and wiki minutes, each approved first.*
 
 ![Kaki meeting room](docs/images/meeting-room.png)
 *A team meeting in progress: the owner and a guest, with Kaki's agenda, live transcript and a follow-up card in the side panel.*
