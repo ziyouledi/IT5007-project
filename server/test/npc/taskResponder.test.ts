@@ -357,6 +357,43 @@ describe('task responder for an AI attendee', () => {
     }
   });
 
+  it('answers aloud when a task someone else handed over is wrongly claimed as a prior promise', async () => {
+    // Alex handed Arjun the task; Arjun only said what he could do. The claim fails, the spoken answer stands.
+    const { responder, sent, said, calls, finish } = setup(
+      '{"priorCommitment": true, "evidenceIndex": 1, "accept": true, "line": "Sure, I\'ll open the ticket now."}',
+      true,
+      false,
+      false,
+      [{ speaker: 'Alex (Visitor)', text: 'Ada, please fix the oven.', agendaItemTitle: 'Prep' }],
+    );
+    responder.handle(updated(task({ agendaItemTitle: 'Prep' })));
+    await tick();
+    expect(calls()).toBe(1);
+    expect(said).toEqual(["Sure, I'll open the ticket now."]);
+    finish();
+    expect(sent).toEqual([['chef', { type: 'CLAIM_TASK', taskId: 't-1', mode: 'MANUAL' }]]);
+  });
+
+  it('asks again without the claim when a failed prior promise came with nothing to say', async () => {
+    const { responder, sent, said, prompts, finish } = setup(
+      [
+        '{"priorCommitment": true, "evidenceIndex": 1, "accept": true, "line": null}',
+        '{"priorCommitment": false, "evidenceIndex": null, "accept": true, "line": "I will fix it."}',
+      ],
+      true,
+      false,
+      false,
+      [{ speaker: 'Alex (Visitor)', text: 'Ada, please fix the oven.', agendaItemTitle: 'Prep' }],
+    );
+    responder.handle(updated(task({ agendaItemTitle: 'Prep' })));
+    await tick();
+    expect(prompts[0]).not.toContain('You did not promise this task yourself');
+    expect(prompts[1]).toContain('You did not promise this task yourself');
+    expect(said).toEqual(['I will fix it.']);
+    finish();
+    expect(sent).toEqual([['chef', { type: 'CLAIM_TASK', taskId: 't-1', mode: 'MANUAL' }]]);
+  });
+
   it('does not silently claim when the task changed after the promise', async () => {
     const reply = '{"priorCommitment": true, "evidenceIndex": 1, "accept": true, "line": null}';
     const promise = "I'll fix the oven this afternoon.";

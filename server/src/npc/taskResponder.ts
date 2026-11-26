@@ -50,6 +50,8 @@ interface Decision {
   line: string | null;
   priorCommitment: boolean;
   evidenceIndex: number | null;
+  /** A spoken line the model gave alongside a prior-commitment claim, kept in case the claim does not check out. */
+  spoken?: { accept: boolean; line: string };
 }
 
 function profileFor(scenario: Scenario, role: Role): { npc: NpcProfile; attendee: string } | undefined {
@@ -99,7 +101,10 @@ export function parseDecision(text: string, requirePriorCommitment = false): Dec
   if (requirePriorCommitment && typeof priorCommitment !== 'boolean') return undefined;
   if (priorCommitment === true) {
     if (!Number.isInteger(evidenceIndex) || (evidenceIndex as number) < 1) return undefined;
-    return { accept: true, line: null, priorCommitment: true, evidenceIndex: evidenceIndex as number };
+    const spoken = typeof accept === 'boolean' && typeof line === 'string' && line.trim() !== ''
+      ? { spoken: { accept, line: line.trim() } }
+      : {};
+    return { accept: true, line: null, priorCommitment: true, evidenceIndex: evidenceIndex as number, ...spoken };
   }
   if (priorCommitment !== undefined && typeof priorCommitment !== 'boolean') return undefined;
   if (typeof accept !== 'boolean' || typeof line !== 'string' || line.trim() === '') return undefined;
@@ -182,13 +187,20 @@ export function createTaskResponder(ports: TaskResponderPorts): { handle(event: 
     ].join('\n');
     const requirePriorCommitment = recent.length > 0;
     const deadlineMs = ports.decisionDeadlineMs ?? DEFAULT_DECISION_DEADLINE_MS;
+    // Set after a prior-commitment claim that no heard line backs: the retry is told so, and must answer aloud.
+    let noPriorPromise = false;
 
     for (let attempt = 0; attempt < DECISION_ATTEMPTS; attempt += 1) {
       try {
         const reply = await llm.complete(
           [
             { role: 'system', content: system },
-            { role: 'user', content: user },
+            {
+              role: 'user',
+              content: noPriorPromise
+                ? `${user}\nYou did not promise this task yourself: someone else handed it to you. Set "priorCommitment" to false and say aloud whether you take it.`
+                : user,
+            },
           ],
           { json: true, temperature: 0.7, signal: AbortSignal.timeout(deadlineMs) },
         );
@@ -203,6 +215,13 @@ export function createTaskResponder(ports: TaskResponderPorts): { handle(event: 
             log?.(
               `${npc.attendee}'s prior commitment for "${task.title}" does not match a heard line (attempt ${attempt + 1})`,
             );
+            // A task handed over by someone else is never the attendee's own promise. When the model also said what
+            // it would say aloud, that ordinary answer still stands; otherwise ask again without the claim.
+            if (decision.spoken !== undefined) {
+              log?.(`${npc.attendee} answers "${task.title}" aloud instead`);
+              return { ...decision.spoken, priorCommitment: false, evidenceIndex: null };
+            }
+            noPriorPromise = true;
             continue;
           }
           log?.(`${npc.attendee} already promised "${task.title}" in: "${line.text}"`);
